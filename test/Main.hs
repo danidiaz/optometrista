@@ -49,7 +49,9 @@ data YetAnotherSubpart = YetAnotherSubpart
 -- 'RecordDotOptics'. Instead, it uses 'HasField'/'SetField'. Field-changing
 -- updates are not supported here.
 instance
-  (HasField name YetAnotherSubpart x, SetField name YetAnotherSubpart x) =>
+  ( HasField name YetAnotherSubpart x,
+    SetField name YetAnotherSubpart x
+  ) =>
   RecordDotOptics name YetAnotherSubpart YetAnotherSubpart x x
   where
   dotOptic = Optics.Core.lens (getField @name) (flip (setField @name))
