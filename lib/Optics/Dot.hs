@@ -8,7 +8,9 @@ module Optics.Dot
   ( HasField (..),
     RecordDotOptics (..),
     GenericDotOptics (..),
+    StockDotOptics (..),
     the,
+    SetField (..),
   )
 where
 
@@ -50,3 +52,13 @@ type SetField :: forall {k}. k -> Type -> Type -> Constraint
 class SetField x r a | x r -> a where
   -- | Selector function to extract the field from the record.
   setField :: a -> r -> r
+
+type StockDotOptics :: Type -> Type
+newtype StockDotOptics s = StockDotOptics s
+
+-- Uncommenting this causes the program to cease to compile!
+-- instance
+--   (HasField name r x, SetField name r x) =>
+--   RecordDotOptics name r r x x (StockDotOptics r)
+--   where
+--   dotOptic = DotOptic (Optics.Core.lens (getField @name) (flip (setField @name)))

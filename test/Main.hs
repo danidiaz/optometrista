@@ -51,28 +51,19 @@ data YetAnotherSubpart = YetAnotherSubpart
   }
   deriving (Show)
 
--- -- | 'YetAnotherSubpart' doesn't use the 'GField' machinery for
--- -- 'RecordDotOptics'. Instead, it uses 'HasField'/'SetField'. Field-changing
--- -- updates are not supported here.
--- instance
---   (HasField name YetAnotherSubpart x, SetField name YetAnotherSubpart x) =>
---   RecordDotOptics name x x YetAnotherSubpart YetAnotherSubpart
---   where
---   dotOptic = Optics.Core.lens (getField @name) (flip (setField @name))
---
--- instance SetField "ooo" YetAnotherSubpart String where
---   setField ooo r = r {ooo}
+-- | 'YetAnotherSubpart' doesn't use the 'GField' machinery for
+-- 'RecordDotOptics'. Instead, it uses 'HasField'/'SetField'. Field-changing
+-- updates are not supported here.
+-- deriving via (GenericDotOptics YetAnotherSubpart) instance (HasField name YetAnotherSubpart x, SetField name YetAnotherSubpart x) => RecordDotOptics name YetAnotherSubpart YetAnotherSubpart x x (GenericDotOptics YetAnotherSubpart)
+instance SetField "ooo" YetAnotherSubpart String where
+  setField ooo r = r {ooo}
 
 whole :: Whole Int
 whole = Whole 0 (Part True (Subpart "wee" 7 (YetAnotherSubpart "oldval" 3)))
 
 -- | Note the the type-changing update
-wholex :: Whole Bool
-wholex = whole & the.part .~ Part True (Subpart "wee" True (YetAnotherSubpart "oldval" 3))
-
--- -- | Note the the type-changing update
--- whole' :: Whole Bool
--- whole' = whole & the.part.subpart.foo .~ False
+whole' :: Whole Bool
+whole' = whole & the.part.subpart.foo .~ False
 
 -- -- | Non-type changed update which includes 'GField' lenses and 'HasField'/'SetField' lenses.
 -- whole'' :: Whole Int
@@ -81,6 +72,7 @@ wholex = whole & the.part .~ Part True (Subpart "wee" True (YetAnotherSubpart "o
 main :: IO ()
 main = do
   print whole
+  print whole'
 
 -- print whole'
 -- print whole''
