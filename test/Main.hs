@@ -17,9 +17,10 @@ data Whole z = Whole
     part :: Part z
   }
   deriving stock (Generic, Show)
-  deriving (RecordDotOptics name (Whole t) a b) via (GenericDotOptics name (Whole t) a b (Whole z))
 
--- deriving via (GenericDotOptics (Whole z)) instance RecordDotOptics name (Whole z) (Whole p) a b (Whole z)
+--   deriving (RecordDotOptics name (Whole t) a b) via (GenericDotOptics name (Whole t) a b (Whole z))
+
+deriving via (GenericDotOptics (Whole z)) instance (GField name (Whole z) (Whole p) a b) => RecordDotOptics name (Whole z) (Whole p) a b (Whole z)
 
 -- instance (GField name (Whole p) (Whole q) a b) => RecordDotOptics name (Whole p) (Whole q) a b (Whole p) where
 --   dotOptic = gfield @name
@@ -29,7 +30,8 @@ data Part z = Part
     subpart :: Subpart z
   }
   deriving stock (Generic, Show)
-  deriving (RecordDotOptics name (Part t) a b) via (GenericDotOptics name (Part t) a b (Part z))
+
+deriving via (GenericDotOptics (Part z)) instance (GField name (Part z) (Part p) a b) => RecordDotOptics name (Part z) (Part p) a b (Part z)
 
 data Subpart z = Subpart
   { wee :: String,
@@ -37,7 +39,8 @@ data Subpart z = Subpart
     yet :: YetAnotherSubpart
   }
   deriving stock (Generic, Show)
-  deriving (RecordDotOptics name (Subpart z) a b) via (GenericDotOptics name (Subpart z) a b (Subpart z))
+
+deriving via (GenericDotOptics (Subpart z)) instance (GField name (Subpart z) (Subpart p) a b) => RecordDotOptics name (Subpart z) (Subpart p) a b (Subpart z)
 
 -- instance (GField name (Subpart p) (Subpart q) a b) => RecordDotOptics name (Subpart p) (Subpart q) a b (Subpart p) where
 --   dotOptic = gfield @name

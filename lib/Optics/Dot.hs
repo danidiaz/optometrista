@@ -19,23 +19,28 @@ import GHC.TypeLits
 import Optics.Core
 
 instance
-  ( RecordDotOptics name v a b u,
+  ( u ~ ß,
+    RecordDotOptics name u v a b ß,
     JoinKinds k A_Lens m,
     AppendIndices is NoIx ks
   ) =>
   HasField name (Optic k is s t u v) (Optic m ks s t a b)
   where
-  getField o = o % dotOptic @name @v @a @b @u
+  getField o = o % (runDotOptic (dotOptic @name @u @v @a @b @ß))
 
--- type role RecordDotOptics nominal nominal nominal nominal nominal nominal
-class RecordDotOptics name t a b s | name s -> t a b, name t -> s a b where
-  dotOptic :: Lens s t a b
+newtype DotOptic name s t a b ß = DotOptic {_dotOptic :: Lens s t a b}
 
-type GenericDotOptics :: Symbol -> Type -> Type -> Type -> Type -> Type
-newtype GenericDotOptics name t a b s = GenericDotOptics s
+runDotOptic :: DotOptic name s t a b ß -> Lens s t a b
+runDotOptic DotOptic {_dotOptic} = _dotOptic
 
-instance (GField name s t a b) => RecordDotOptics name t a b (GenericDotOptics name t a b s) where
-  dotOptic = coerceS (gfield @name)
+class RecordDotOptics name s t a b ß | name s -> t a b, name t -> s a b where
+  dotOptic :: DotOptic name s t a b ß
+
+type GenericDotOptics :: Type -> Type
+newtype GenericDotOptics s = GenericDotOptics s
+
+instance (GField name s t a b) => RecordDotOptics name s t a b (GenericDotOptics s) where
+  dotOptic = DotOptic (gfield @name)
 
 the :: Iso a b a b
 the = Optics.Core.equality
