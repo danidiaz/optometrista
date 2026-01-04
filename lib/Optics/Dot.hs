@@ -177,3 +177,4 @@ class SetField x r a | x r -> a where
 -- >>> import GHC.Generics
 -- >>> import Optics.Core
 -- >>> import Optics.Dot
+--
