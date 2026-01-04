@@ -1,13 +1,13 @@
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoFieldSelectors #-}
 
--- https://stackoverflow.com/questions/53009549/haskell-derivingvia-on-multi-param-type-classes-with-fun-deps
 module Main (main) where
 
 import GHC.Generics
-import GHC.Records
 import Optics.Core
 import Optics.Dot
 
@@ -16,18 +16,14 @@ data Whole a = Whole
     part :: Part a
   }
   deriving stock (Generic, Show)
-
-instance (GField name (Whole p) (Whole q) a b) => RecordDotOptics name (Whole p) (Whole q) a b where
-  dotOptic = gfield @name
+  deriving (DotOptics) via GenericDotOptics (Whole a)
 
 data Part a = Part
   { part1 :: Bool,
     subpart :: Subpart a
   }
   deriving stock (Generic, Show)
-
-instance (GField name (Part p) (Part q) a b) => RecordDotOptics name (Part p) (Part q) a b where
-  dotOptic = gfield @name
+  deriving (DotOptics) via GenericDotOptics (Part a)
 
 data Subpart a = Subpart
   { wee :: String,
@@ -35,40 +31,36 @@ data Subpart a = Subpart
     yet :: YetAnotherSubpart
   }
   deriving stock (Generic, Show)
-
-instance (GField name (Subpart p) (Subpart q) a b) => RecordDotOptics name (Subpart p) (Subpart q) a b where
-  dotOptic = gfield @name
+  deriving (DotOptics) via GenericDotOptics (Subpart a)
 
 data YetAnotherSubpart = YetAnotherSubpart
   { ooo :: String,
     uuu :: Int
   }
   deriving (Show)
+  deriving (DotOptics) via FieldDotOptics YetAnotherSubpart
 
 -- | 'YetAnotherSubpart' doesn't use the 'GField' machinery for
 -- 'RecordDotOptics'. Instead, it uses 'HasField'/'SetField'. Field-changing
 -- updates are not supported here.
-instance
-  ( HasField name YetAnotherSubpart x,
-    SetField name YetAnotherSubpart x
-  ) =>
-  RecordDotOptics name YetAnotherSubpart YetAnotherSubpart x x
-  where
-  dotOptic = Optics.Core.lens (getField @name) (flip (setField @name))
-
 instance SetField "ooo" YetAnotherSubpart String where
   setField ooo r = r {ooo}
 
 whole :: Whole Int
 whole = Whole 0 (Part True (Subpart "wee" 7 (YetAnotherSubpart "oldval" 3)))
 
--- | Note the the type-changing update
-whole' :: Whole Bool
-whole' = whole & the.part.subpart.foo .~ False
+typChanging1 :: Whole Bool
+typChanging1 = whole & the.part .~ Part True (Subpart "wee" False (YetAnotherSubpart "oldval" 3))
+
+typChanging2 :: Whole Bool
+typChanging2 = whole & the.part.subpart .~ Subpart "wee" False (YetAnotherSubpart "oldval" 3)
+
+typeChanging3 :: Whole String
+typeChanging3 = whole & the.part.subpart .~ Subpart "wee" "stuff" (YetAnotherSubpart "oldval" 3)
 
 -- | Non-type changed update which includes 'GField' lenses and 'HasField'/'SetField' lenses.
-whole'' :: Whole Int
-whole'' = whole & the.part.subpart.yet.ooo .~ "newval"
+nonTypChanging1 :: Whole Int
+nonTypChanging1 = whole & the.part.subpart.yet.ooo .~ "newval"
 
 normalDotAccess :: String
 normalDotAccess = whole.part.subpart.yet.ooo
@@ -76,6 +68,8 @@ normalDotAccess = whole.part.subpart.yet.ooo
 main :: IO ()
 main = do
   print whole
-  print whole'
-  print whole''
+  print typChanging1
+  print typChanging2
+  print typeChanging3
+  print nonTypChanging1
   print normalDotAccess
