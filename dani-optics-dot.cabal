@@ -1,5 +1,5 @@
 cabal-version:      3.4
-name:               optics-dot
+name:               dani-optics-dot
 version:            0.1.0.0
 synopsis:           Use @OverloadedRecordDot@ for nested optics access.
 description:        Typeclasses and instances for the "optics" package,
@@ -46,4 +46,4 @@ test-suite optimetrista-test
     hs-source-dirs:   test
     main-is:          Main.hs
     build-depends:
-        optics-dot,
+        dani-optics-dot,
