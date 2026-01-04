@@ -16,14 +16,14 @@ data Whole a = Whole
     part :: Part a
   }
   deriving stock (Generic, Show)
-  deriving (DotOptics) via GenericsDotOptics (Whole a)
+  deriving (DotOptics) via GenericDotOptics (Whole a)
 
 data Part a = Part
   { part1 :: Bool,
     subpart :: Subpart a
   }
   deriving stock (Generic, Show)
-  deriving (DotOptics) via GenericsDotOptics (Part a)
+  deriving (DotOptics) via GenericDotOptics (Part a)
 
 data Subpart a = Subpart
   { wee :: String,
@@ -31,7 +31,7 @@ data Subpart a = Subpart
     yet :: YetAnotherSubpart
   }
   deriving stock (Generic, Show)
-  deriving (DotOptics) via GenericsDotOptics (Subpart a)
+  deriving (DotOptics) via GenericDotOptics (Subpart a)
 
 data YetAnotherSubpart = YetAnotherSubpart
   { ooo :: String,
