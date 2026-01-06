@@ -77,9 +77,13 @@ module Optics.Dot
     DotOptics (..),
     HasDotOptic (..),
     GenericLenses (..),
-    GenericLensesMethod,
+    -- GenericLensesMethod,
+    GenericAffineTraversals (..),
+    -- GenericAffineTraversalsMethod,
+    GenericPrisms (..),
+    -- GenericPrismsMethod,
     FieldLenses (..),
-    FieldLensesMethod,
+    -- FieldLensesMethod,
 
     -- * Things that will eventually be in base
     SetField (..),
@@ -93,13 +97,14 @@ import Optics.Core
 
 instance
   ( DotOptics u,
-    HasDotOptic (DotOpticsMethod u) name u v a b,
-    JoinKinds k A_Lens m,
+    method ~ DotOpticsMethod u,
+    HasDotOptic method name dotName u v a b,
+    JoinKinds k (DotOpticKind method name u) m,
     AppendIndices is NoIx ks
   ) =>
-  HasField name (Optic k is s t u v) (Optic m ks s t a b)
+  HasField dotName (Optic k is s t u v) (Optic m ks s t a b)
   where
-  getField o = o % (dotOptic @(DotOpticsMethod u) @name @u @v @a @b)
+  getField o = o % (dotOptic @(DotOpticsMethod u) @name @dotName @u @v @a @b)
 
 -- | Helper typeclass, used to specify the method for deriving dot optics.
 -- Usually derived with @DerivingVia@.
@@ -110,11 +115,20 @@ class DotOptics s where
 
 -- | Produce an optic according to the given method.
 --
--- __note__: The @name v -> u a b@ fundep could be added but doesn't seem to be necessary.
--- Could it improve type inference?
-type HasDotOptic :: Type -> Symbol -> Type -> Type -> Type -> Type -> Constraint
-class HasDotOptic method name u v a b | name u -> a b where
-  dotOptic :: Lens u v a b
+-- __note__: The @name v -> u a b@ fundep seems to be optional here.
+-- Do we gain anything by removing it?
+type HasDotOptic :: Type -> Symbol -> Symbol -> Type -> Type -> Type -> Type -> Constraint
+class
+  HasDotOptic method name dotName u v a b
+    | -- Usually the name used with dot notation doesn't change, except for constructors.
+      name u -> dotName,
+      -- Necessary to satisfy the 'HasField' instance.
+      dotName u -> name,
+      name u -> v a b,
+      name v -> u a b
+  where
+  type DotOpticKind method name u :: OpticKind
+  dotOptic :: Optic (DotOpticKind method name u) NoIx u v a b
 
 data GenericLensesMethod
 
@@ -128,10 +142,54 @@ instance DotOptics (GenericLenses s) where
 
 -- | Produce an optic using the optics' package own generic machinery.
 instance
-  (GField name s t a b) =>
-  HasDotOptic GenericLensesMethod name s t a b
+  ( GField name s t a b,
+    name ~ dotName
+  ) =>
+  HasDotOptic GenericLensesMethod name dotName s t a b
   where
+  type DotOpticKind GenericLensesMethod name s = A_Lens
   dotOptic = gfield @name
+
+data GenericAffineTraversalsMethod
+
+-- | For deriving 'DotOptics' using DerivingVia. The wrapped type is not used for anything.
+--
+-- Supports type-changing updates.
+newtype GenericAffineTraversals s = GenericAffineTraversals s
+
+instance DotOptics (GenericAffineTraversals s) where
+  type DotOpticsMethod (GenericAffineTraversals s) = GenericAffineTraversalsMethod
+
+-- | Produce an optic using the optics' package own generic machinery.
+instance
+  ( GAffineField name s t a b,
+    name ~ dotName
+  ) =>
+  HasDotOptic GenericAffineTraversalsMethod name dotName s t a b
+  where
+  type DotOpticKind GenericAffineTraversalsMethod name s = An_AffineTraversal
+  dotOptic = gafield @name
+
+data GenericPrismsMethod
+
+-- | For deriving 'DotOptics' using DerivingVia. The wrapped type is not used for anything.
+--
+-- Supports type-changing updates.
+newtype GenericPrisms s = GenericPrisms s
+
+instance DotOptics (GenericPrisms s) where
+  type DotOpticsMethod (GenericPrisms s) = GenericPrismsMethod
+
+-- | Produce an optic using the optics' package own generic machinery.
+instance
+  ( GConstructor name s t a b,
+    -- Dot notation doesn't allow starting with uppercase like constructors do, so we prepend an underscore.
+    ConsSymbol '_' name ~ dotName
+  ) =>
+  HasDotOptic GenericPrismsMethod name dotName s t a b
+  where
+  type DotOpticKind GenericPrismsMethod name s = A_Prism
+  dotOptic = gconstructor @name
 
 data FieldLensesMethod
 
@@ -148,11 +206,13 @@ instance
   ( HasField name s a,
     SetField name s a,
     s ~ t,
-    a ~ b
+    a ~ b,
+    name ~ dotName
   ) =>
   -- if you change to @name s s a a@, a compilation error crops up in tests.
-  HasDotOptic FieldLensesMethod name s t a b
+  HasDotOptic FieldLensesMethod name dotName s t a b
   where
+  type DotOpticKind FieldLensesMethod name s = A_Lens
   dotOptic = Optics.Core.lens (getField @name) (flip (setField @name))
 
 -- | Identity 'Iso'. Used as a starting point for dot access. A renamed 'Optics.Core.equality'.

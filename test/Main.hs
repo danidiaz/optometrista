@@ -66,6 +66,18 @@ nonTypChanging1 = whole & the.part.subpart.yet.ooo .~ "newval"
 normalDotAccess :: String
 normalDotAccess = whole.part.subpart.yet.ooo
 
+data Animal
+  = Dog {name :: String, age :: Int}
+  | Cat {name :: String, purrs :: Bool}
+  | Octopus {tentacles :: Int}
+  deriving (Show, Generic)
+  deriving (DotOptics) via GenericPrisms Animal
+
+animal = Dog {name = "Fido", age = 5}
+
+matchesDog :: Maybe ([Char], Int)
+matchesDog = animal ^? the._Dog
+
 main :: IO ()
 main = do
   print whole
@@ -74,3 +86,4 @@ main = do
   print typeChanging3
   print nonTypChanging1
   print normalDotAccess
+  print matchesDog
