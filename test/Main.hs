@@ -9,6 +9,7 @@
 module Main (main) where
 
 import GHC.Generics
+import GHC.Records
 import Optics.Core
 import Optics.Dot
 
@@ -71,12 +72,36 @@ data Animal
   | Cat {name :: String, purrs :: Bool}
   | Octopus {tentacles :: Int}
   deriving (Show, Generic)
-  deriving (DotOptics) via GenericConstructors  Animal
+  deriving (DotOptics) via GenericConstructors Animal
 
 animal = Dog {name = "Fido", age = 5}
 
 matchesDog :: Maybe ([Char], Int)
 matchesDog = animal ^? the._Dog
+
+data FieldsMethod
+
+-- | For deriving 'DotOptics' using DerivingVia. The wrapped type is not used for anything.
+--
+-- Doesn't support type-changing updates.
+newtype Fields s = Fields s
+
+instance DotOptics (Fields s) where
+  type DotOpticsMethod (Fields s) = FieldsMethod
+
+-- | Produce an optic using the 'HasField'/'SetField' machinery form "GHC.Records".
+instance
+  ( HasField name s a,
+    SetField name s a,
+    s ~ t,
+    a ~ b,
+    name ~ dotName
+  ) =>
+  -- if you change to @name s s a a@, a compilation error crops up in tests.
+  HasDotOptic FieldsMethod name dotName s t a b
+  where
+  type DotOpticKind FieldsMethod name s = A_Lens
+  dotOptic = Optics.Core.lens (getField @name) (flip (setField @name))
 
 main :: IO ()
 main = do

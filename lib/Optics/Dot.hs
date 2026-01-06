@@ -41,7 +41,7 @@
 --     uuu :: Int
 --   }
 --   deriving (Show)
---   deriving (DotOptics) via Fields YetAnotherSubpart
+--   deriving (DotOptics) via GenericFields YetAnotherSubpart
 -- --
 -- instance SetField "ooo" YetAnotherSubpart String where
 --   setField ooo r = r {ooo}
@@ -77,13 +77,8 @@ module Optics.Dot
     DotOptics (..),
     HasDotOptic (..),
     GenericFields (..),
-    -- GenericFieldsMethod,
     GenericAffineFields (..),
-    -- GenericAffineFieldsMethod,
-    GenericConstructors  (..),
-    -- GenericConstructors Method,
-    Fields (..),
-    -- FieldsMethod,
+    GenericConstructors (..),
 
     -- * Things that will eventually be in base
     SetField (..),
@@ -175,10 +170,10 @@ data GenericConstructorsMethod
 -- | For deriving 'DotOptics' using DerivingVia. The wrapped type is not used for anything.
 --
 -- Supports type-changing updates.
-newtype GenericConstructors  s = GenericConstructors  s
+newtype GenericConstructors s = GenericConstructors s
 
-instance DotOptics (GenericConstructors  s) where
-  type DotOpticsMethod (GenericConstructors  s) = GenericConstructorsMethod
+instance DotOptics (GenericConstructors s) where
+  type DotOpticsMethod (GenericConstructors s) = GenericConstructorsMethod
 
 -- | Produce an optic using the optics' package own generic machinery.
 instance
@@ -190,30 +185,6 @@ instance
   where
   type DotOpticKind GenericConstructorsMethod name s = A_Prism
   dotOptic = gconstructor @name
-
-data FieldsMethod
-
--- | For deriving 'DotOptics' using DerivingVia. The wrapped type is not used for anything.
---
--- Doesn't support type-changing updates.
-newtype Fields s = Fields s
-
-instance DotOptics (Fields s) where
-  type DotOpticsMethod (Fields s) = FieldsMethod
-
--- | Produce an optic using the 'HasField'/'SetField' machinery form "GHC.Records".
-instance
-  ( HasField name s a,
-    SetField name s a,
-    s ~ t,
-    a ~ b,
-    name ~ dotName
-  ) =>
-  -- if you change to @name s s a a@, a compilation error crops up in tests.
-  HasDotOptic FieldsMethod name dotName s t a b
-  where
-  type DotOpticKind FieldsMethod name s = A_Lens
-  dotOptic = Optics.Core.lens (getField @name) (flip (setField @name))
 
 -- | Identity 'Iso'. Used as a starting point for dot access. A renamed 'Optics.Core.equality'.
 the :: Iso s t s t
