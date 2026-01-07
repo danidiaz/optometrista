@@ -1,9 +1,9 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE TypeData #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE TypeData #-}
 
 -- | An orphan 'HasField' instance (along with some supporting machinery) for
 -- the 'Optics.Core.Optic' datatype, that lets you use dot-access syntax on an
@@ -81,7 +81,7 @@
 --   | Octopus {tentacles :: Whole a}
 --   deriving (Show, Generic)
 --   deriving (DotOptics) via GenericConstructors (Animal a)
--- -- 
+-- --
 -- dog :: Animal Int
 -- dog = Dog {name = "Fido", age = 5}
 -- :}
@@ -98,8 +98,6 @@
 -- changesOctopus :: Animal Bool
 -- changesOctopus = dog & the._Octopus.part.subpart.foo .~ False
 -- :}
---
---
 module Optics.Dot
   ( the,
     DotOptics (..),
@@ -120,7 +118,7 @@ instance
   ( DotOptics u,
     method ~ DotOpticsMethod u,
     HasDotOptic method name dotName u v a b,
-    l ~ DotOpticKind method name u,
+    l ~ DotOpticKind method dotName u,
     JoinKinds k l m,
     AppendIndices is NoIx ks
   ) =>
@@ -136,12 +134,10 @@ class DotOptics s where
   type DotOpticsMethod s :: Type
 
 -- | Produce an optic according to the given method.
---
 type HasDotOptic :: Type -> Symbol -> Symbol -> Type -> Type -> Type -> Type -> Constraint
 class
   HasDotOptic method name dotName u v a b
-    | 
-      -- Necessary to satisfy the 'HasField' instance.
+    | -- Necessary to satisfy the 'HasField' instance.
       dotName u -> name,
       dotName u -> v a b,
       dotName v -> u a b
@@ -212,8 +208,8 @@ instance
   type DotOpticKind GenericConstructorsMethod dotName s = A_Prism
   dotOptic = gconstructor @name
 
-type data DotNameForWhat =
-  ConstructorDotName
+type data DotNameForWhat
+  = ConstructorDotName
   | FieldDotName
 
 -- | Type family to check if a symbol starts with an underscore.
@@ -221,11 +217,12 @@ type family InspectDotName (s :: Symbol) :: (Symbol, DotNameForWhat) where
   InspectDotName s = InspectDotNameHelper s (UnconsSymbol s)
 
 type family InspectDotNameHelper (original :: Symbol) (m :: Maybe (Char, Symbol)) :: (Symbol, DotNameForWhat) where
-  InspectDotNameHelper original ('Just '( '_', rest) ) = '(rest, ConstructorDotName)
+  InspectDotNameHelper original ('Just '( '_', rest)) = '(rest, ConstructorDotName)
   InspectDotNameHelper original _ = '(original, FieldDotName)
 
 -- | Helper typeclass that dispatches based on whether the name starts with underscore.
-class HasConstructorOrAffineFieldOptic (nameAnalysis :: (Symbol, DotNameForWhat)) s t a b
+class
+  HasConstructorOrAffineFieldOptic (nameAnalysis :: (Symbol, DotNameForWhat)) s t a b
     | nameAnalysis s -> t a b,
       nameAnalysis t -> s a b
   where
@@ -233,19 +230,17 @@ class HasConstructorOrAffineFieldOptic (nameAnalysis :: (Symbol, DotNameForWhat)
   dotOpticHelper :: Optic (DotOpticKindHelper nameAnalysis s) NoIx s t a b
 
 instance
-  ( GConstructor name s t a b
-  ) =>
-  HasConstructorOrAffineFieldOptic '(name,ConstructorDotName) s t a b
+  (GConstructor name s t a b) =>
+  HasConstructorOrAffineFieldOptic '(name, ConstructorDotName) s t a b
   where
-  type DotOpticKindHelper '(name,ConstructorDotName) s = A_Prism
+  type DotOpticKindHelper '(name, ConstructorDotName) s = A_Prism
   dotOpticHelper = gconstructor @name
 
 instance
-  ( GAffineField name s t a b
-  ) =>
-  HasConstructorOrAffineFieldOptic '(name,FieldDotName) s t a b
+  (GAffineField name s t a b) =>
+  HasConstructorOrAffineFieldOptic '(name, FieldDotName) s t a b
   where
-  type DotOpticKindHelper '(name,FieldDotName) s = An_AffineTraversal
+  type DotOpticKindHelper '(name, FieldDotName) s = An_AffineTraversal
   dotOpticHelper = gafield @name
 
 data GenericConstructorsAndAffineFieldsMethod
@@ -269,8 +264,9 @@ instance
   ) =>
   HasDotOptic GenericConstructorsAndAffineFieldsMethod name dotName s t a b
   where
-  type DotOpticKind GenericConstructorsAndAffineFieldsMethod dotName s =
-    DotOpticKindHelper (InspectDotName dotName) s
+  type
+    DotOpticKind GenericConstructorsAndAffineFieldsMethod dotName s =
+      DotOpticKindHelper (InspectDotName dotName) s
   dotOptic = dotOpticHelper @(InspectDotName dotName)
 
 -- | Identity 'Iso'. Used as a starting point for dot access. A renamed 'Optics.Core.equality'.

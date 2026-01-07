@@ -1,20 +1,20 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoFieldSelectors #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
 
 module Main (main) where
 
+import Data.Kind (Constraint, Type)
 import GHC.Generics
 import GHC.Records
 import Optics.Core
 import Optics.Dot
-import Data.Kind (Type, Constraint)
 
 data Whole a = Whole
   { whole1 :: Int,
@@ -44,7 +44,6 @@ data YetAnotherSubpart = YetAnotherSubpart
   }
   deriving (Show)
   deriving (DotOptics) via Fields YetAnotherSubpart
-
 
 -- | This should be in base in the future.
 type SetField :: forall {k}. k -> Type -> Type -> Constraint
@@ -83,7 +82,7 @@ normalDotAccess = whole.part.subpart.yet.ooo
 data Animal a
   = Dog {name :: String, age :: Int}
   | Cat {name :: String, purrs :: Bool}
-  | Squirrel { twees :: Bool}
+  | Squirrel {twees :: Bool}
   | Octopus {tentacles :: Whole a}
   deriving (Show, Generic)
   deriving (DotOptics) via GenericConstructors (Animal a)
@@ -100,17 +99,18 @@ matchesSquirrel = dog ^? the._Squirrel
 changesOctopus :: Animal Bool
 changesOctopus = dog & the._Octopus.part.subpart.foo .~ False
 
-data Carta a = 
-      Sota | Caballo | Rey {valor :: a}
+data Carta a
+  = Sota
+  | Caballo
+  | Rey {valor :: a}
   deriving (Show, Generic)
   deriving (DotOptics) via GenericAffineFields (Carta a)
 
 carta :: Carta Int
-carta = Rey { valor = 3 }
+carta = Rey {valor = 3}
 
 cartaRey :: Carta Bool
 cartaRey = carta & the.valor .~ True
-
 
 data FieldsMethod
 
@@ -133,7 +133,7 @@ instance
   -- if you change to @name s s a a@, a compilation error crops up in tests.
   HasDotOptic FieldsMethod name dotName s t a b
   where
-  type DotOpticKind FieldsMethod name s = A_Lens
+  type DotOpticKind FieldsMethod dotName s = A_Lens
   dotOptic = Optics.Core.lens (getField @name) (flip (setField @name))
 
 main :: IO ()
