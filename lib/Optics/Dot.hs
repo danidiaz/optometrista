@@ -221,12 +221,12 @@ type data DotNameForWhat
   | FieldDotName
 
 -- | Type family to check if a symbol starts with an underscore.
-type family InspectDotName (s :: Symbol) :: (Symbol, DotNameForWhat) where
-  InspectDotName s = InspectDotNameHelper s (UnconsSymbol s)
+type family AnalyzeDotName (s :: Symbol) :: (Symbol, DotNameForWhat) where
+  AnalyzeDotName s = AnalyzeDotNameHelper s (UnconsSymbol s)
 
-type family InspectDotNameHelper (original :: Symbol) (m :: Maybe (Char, Symbol)) :: (Symbol, DotNameForWhat) where
-  InspectDotNameHelper original ('Just '( '_', rest)) = '(rest, ConstructorDotName)
-  InspectDotNameHelper original _ = '(original, FieldDotName)
+type family AnalyzeDotNameHelper (original :: Symbol) (m :: Maybe (Char, Symbol)) :: (Symbol, DotNameForWhat) where
+  AnalyzeDotNameHelper original ('Just '( '_', rest)) = '(rest, ConstructorDotName)
+  AnalyzeDotNameHelper original _ = '(original, FieldDotName)
 
 -- | Helper typeclass that dispatches based on whether the name starts with underscore.
 class
@@ -258,6 +258,23 @@ data GenericConstructorsAndAffineFieldsMethod
 -- This combines constructors (names starting with '_') and affine fields (other names).
 --
 -- Supports type-changing updates.
+--
+-- >>> :{
+-- data Branchy =
+--      SomeBranch { foo :: Int, bar :: Bool }
+--    | OtherBranch { wee :: String }
+--    deriving stock (Generic, Show)
+--    deriving (DotOptics) via GenericConstructorsAndAffineFields Branchy 
+-- branchy :: Branchy
+-- branchy = SomeBranch { foo = 0, bar = False }
+-- --
+-- fooVal :: Maybe Int 
+-- fooVal = branchy ^? the.foo  
+-- branchVal :: Maybe String 
+-- branchVal = branchy ^? the._OtherBranch
+-- :}
+--
+--
 newtype GenericConstructorsAndAffineFields s = MakeGenericConstructorsAndAffineFields s
 
 instance DotOptics (GenericConstructorsAndAffineFields s) where
@@ -266,7 +283,7 @@ instance DotOptics (GenericConstructorsAndAffineFields s) where
 -- | Produce an optic using the optics' package own generic machinery.
 -- Delegates to GConstructor or GAffineField depending on whether dotName starts with '_'.
 instance
-  ( nameAnalysis ~ InspectDotName dotName,
+  ( nameAnalysis ~ AnalyzeDotName dotName,
     '(name, dotNameForWhat) ~ nameAnalysis,
     HasConstructorOrAffineFieldOptic nameAnalysis s t a b
   ) =>
@@ -274,8 +291,8 @@ instance
   where
   type
     DotOpticKind GenericConstructorsAndAffineFieldsMethod dotName s =
-      DotOpticKindHelper (InspectDotName dotName) s
-  dotOptic = dotOpticHelper @(InspectDotName dotName)
+      DotOpticKindHelper (AnalyzeDotName dotName) s
+  dotOptic = dotOpticHelper @(AnalyzeDotName dotName)
 
 -- | Identity 'Iso'. Used as a starting point for dot access. A renamed 'Optics.Core.equality'.
 the :: Iso s t s t
