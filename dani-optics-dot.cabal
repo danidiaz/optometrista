@@ -1,6 +1,6 @@
 cabal-version:      3.4
 name:               dani-optics-dot
-version:            0.1.0.0
+version:            0.1.1.0
 synopsis:           Use OverloadedRecordDot for nested optics access.
 description:        Extra typeclasses and instances for the "optics-core" package,
                     that allow syntax like @the.foo.bar@ to express the 
@@ -9,9 +9,9 @@ description:        Extra typeclasses and instances for the "optics-core" packag
                     For each datatype, we can select through @DerivingVia@ how
                     to obtain optics for its fields or constructors.
                     
-                    Usually the optics are obtained through "optics-core"'s 
-                    built-in support for generic deriving, but other methods are
-                    supported as well.
+                    Usually the optics are obtained through the built-in support
+                    "optics-core" has for generic deriving, but other methods
+                    are supported as well.
 
                     Type-changing updates are supported.
 license:            BSD-3-Clause

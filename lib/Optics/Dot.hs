@@ -59,7 +59,7 @@
 -- :}
 --
 -- Except when some other optics already serves as a starting point:
--- 
+--
 -- >>> :{
 -- nonTypChanging2 :: [Whole Int]
 -- nonTypChanging2 = [whole, whole] & traversed.part.subpart.yet.ooo .~ "newval"
