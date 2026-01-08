@@ -79,7 +79,7 @@
 -- typeChanging3 = whole & the.part.subpart .~ Subpart "wee" "stuff" (YetAnotherSubpart "oldval" 3)
 -- :}
 --
--- We can refer to constructs of sum types. Note how 'DotOptics' is derived via 'GenericConstructors':
+-- We can refer to constructors of sum types. Note how 'DotOptics' is derived via 'GenericConstructors':
 --
 -- >>> :{
 -- data Animal a
