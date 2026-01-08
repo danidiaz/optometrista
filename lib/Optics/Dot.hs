@@ -106,6 +106,21 @@
 -- changesOctopus :: Animal Bool
 -- changesOctopus = dog & the._Octopus.part.subpart.foo .~ False
 -- :}
+--
+--
+-- For more advanced cases, we can manually define 'DotOptics' and 'HasDotOptic' instances
+-- for our datatypes, instead of deriving them.
+--
+-- >>> :{
+-- data Wee = Wee { vvv :: Int, bbb :: Int } 
+--    deriving stock (Show, Generic)
+--    deriving (DotOptics) via CustomDotOptics Wee
+-- instance HasDotOptic Wee "vvv" "vvv" Wee Wee Int Int where
+--    type DotOpticKind Wee "vvv" Wee = A_Lens
+--    dotOptic = lens (.vvv) (\r vvv -> r { vvv })
+-- :}
+--
+-- 
 module Optics.Dot
   ( the,
     DotOptics (..),
@@ -292,9 +307,15 @@ instance
       DotOpticKindHelper (AnalyzeDotName dotName) s
   dotOptic = dotOpticHelper @(AnalyzeDotName dotName)
 
+newtype CustomDotOptics s = MakeCustomDotOptics s
+
+instance DotOptics (CustomDotOptics s) where
+  type DotOpticsMethod (CustomDotOptics s) = s
+
 -- | Identity 'Iso'. Used as a starting point for dot access. A renamed 'Optics.Core.equality'.
 the :: Iso s t s t
 the = Optics.Core.equality
+
 
 -- $setup
 -- >>> :set -XDerivingVia
